@@ -60,7 +60,7 @@ func (d *SQLDatabase) Install(args ...any) error {
 func (d *SQLDatabase) Connect() error {
 	// Create Bun DB instance
 	sqldb := sql.OpenDB(d.Driver)
-	d.DB = bun.NewDB(sqldb, d.Dialect)
+	d.DB = bun.NewDB(sqldb, d.Dialect, bun.WithDiscardUnknownColumns())
 
 	return nil
 }
