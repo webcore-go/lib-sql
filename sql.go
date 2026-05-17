@@ -136,7 +136,11 @@ func (d *SQLDatabase) Find(ctx context.Context, results any, table string, colum
 	query := d.DB.NewSelect()
 	tables := strings.Split(table, ",")
 	if tables[0] != "" {
-		query.Table(tables[0])
+		if tables[0] == "[me]" {
+			query.Model(results)
+		} else {
+			query.Table(tables[0])
+		}
 	} else {
 		query.Model(results)
 	}
@@ -182,7 +186,11 @@ func (d *SQLDatabase) FindOne(ctx context.Context, result any, table string, col
 	query := d.DB.NewSelect()
 	tables := strings.Split(table, ",")
 	if tables[0] != "" {
-		query.Table(tables[0])
+		if tables[0] == "[me]" {
+			query.Model(result)
+		} else {
+			query.Table(tables[0])
+		}
 	} else {
 		query.Model(result)
 	}
