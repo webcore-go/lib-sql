@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/uptrace/bun v1.2.18
-	github.com/webcore-go/webcore v0.0.18
+	github.com/webcore-go/webcore v0.0.27
 )
 
 require (
