@@ -1,11 +1,11 @@
 module github.com/webcore-go/lib-sql
 
-go 1.25.0
+go 1.25.7
 
 require (
-	github.com/pressly/goose/v3 v3.27.0
+	github.com/pressly/goose/v3 v3.27.1
 	github.com/uptrace/bun v1.2.18
-	github.com/webcore-go/webcore v0.0.27
+	github.com/webcore-go/webcore v0.0.28
 )
 
 require (

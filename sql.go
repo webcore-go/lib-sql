@@ -421,6 +421,8 @@ func buildWhereClause(driver string, builder bun.QueryBuilder, filter []port.DbE
 				}
 			case "LIKE":
 			case "ILIKE":
+			case "NOT LIKE":
+			case "NOT ILIKE":
 				op := value.Op
 				if driver != "postgres" {
 					op = "LIKE"
@@ -429,6 +431,14 @@ func buildWhereClause(driver string, builder bun.QueryBuilder, filter []port.DbE
 					builder.WhereOr(fmt.Sprintf("%s %s ?", value.Expr, op), value.Args...)
 				} else {
 					builder.Where(fmt.Sprintf("%s %s ?", value.Expr, op), value.Args...)
+				}
+			case "BETWEEN":
+			case "NOT BETWEEN":
+				op := value.Op
+				if andOr == "OR" {
+					builder.WhereOr(fmt.Sprintf("%s %s ? AND ?", value.Expr, op), value.Args...)
+				} else {
+					builder.Where(fmt.Sprintf("%s %s ? AND ?", value.Expr, op), value.Args...)
 				}
 			case "GROUP_OR":
 				ln := len(value.Args)
@@ -455,6 +465,13 @@ func buildWhereClause(driver string, builder bun.QueryBuilder, filter []port.DbE
 					builder.WhereGroup(" AND ", func(q bun.QueryBuilder) bun.QueryBuilder {
 						return buildWhereClause(driver, q, conditions, "AND")
 					})
+				}
+			case "NOT":
+				if len(value.Args) > 0 {
+					switch value.Args[0] {
+					case nil:
+						builder.Where(fmt.Sprintf("%s IS NOT NULL", value.Expr))
+					}
 				}
 			default:
 				if len(value.Args) > 0 {
