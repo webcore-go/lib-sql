@@ -8,6 +8,7 @@ import (
 	"log"
 	"maps"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/pressly/goose/v3"
@@ -230,8 +231,17 @@ func (d *SQLDatabase) InsertOne(ctx context.Context, _ string, data any) (any, e
 }
 
 // Update updates records in a table with optional filtering
-func (d *SQLDatabase) Update(ctx context.Context, _ string, filter []port.DbExpression, data any) (int64, error) {
-	query := d.DB.NewUpdate().Model(data)
+func (d *SQLDatabase) Update(ctx context.Context, table string, filter []port.DbExpression, data any) (int64, error) {
+	var query *bun.UpdateQuery
+	rv := reflect.ValueOf(data)
+	for rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+	if rv.Kind() == reflect.Struct {
+		query = d.DB.NewUpdate().Model(data)
+	} else {
+		query = d.DB.NewUpdate().Table(table)
+	}
 
 	buildWhereClause(d.Config.Driver, query.QueryBuilder(), filter, "")
 
@@ -244,8 +254,17 @@ func (d *SQLDatabase) Update(ctx context.Context, _ string, filter []port.DbExpr
 }
 
 // UpdateOne updates a single record in a table
-func (d *SQLDatabase) UpdateOne(ctx context.Context, _ string, filter []port.DbExpression, data any) (int64, error) {
-	query := d.DB.NewUpdate().Model(data)
+func (d *SQLDatabase) UpdateOne(ctx context.Context, table string, filter []port.DbExpression, data any) (int64, error) {
+	var query *bun.UpdateQuery
+	rv := reflect.ValueOf(data)
+	for rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+	if rv.Kind() == reflect.Struct {
+		query = d.DB.NewUpdate().Model(data)
+	} else {
+		query = d.DB.NewUpdate().Table(table)
+	}
 
 	buildWhereClause(d.Config.Driver, query.QueryBuilder(), filter, "")
 
