@@ -240,7 +240,7 @@ func (d *SQLDatabase) Update(ctx context.Context, table string, filter []port.Db
 	if rv.Kind() == reflect.Struct {
 		query = d.DB.NewUpdate().Model(data)
 	} else {
-		query = d.DB.NewUpdate().Table(table)
+		query = d.DB.NewUpdate().Model(data).Table(table)
 	}
 
 	buildWhereClause(d.Config.Driver, query.QueryBuilder(), filter, "")
@@ -263,7 +263,7 @@ func (d *SQLDatabase) UpdateOne(ctx context.Context, table string, filter []port
 	if rv.Kind() == reflect.Struct {
 		query = d.DB.NewUpdate().Model(data)
 	} else {
-		query = d.DB.NewUpdate().Table(table)
+		query = d.DB.NewUpdate().Model(data).Table(table)
 	}
 
 	buildWhereClause(d.Config.Driver, query.QueryBuilder(), filter, "")
