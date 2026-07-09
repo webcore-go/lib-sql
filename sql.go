@@ -59,8 +59,18 @@ func (d *SQLDatabase) Install(args ...any) error {
 
 // Connect establishes a database connection
 func (d *SQLDatabase) Connect() error {
-	// Create Bun DB instance
 	sqldb := sql.OpenDB(d.Driver)
+
+	if d.Config.MaxOpenConns > 0 {
+		sqldb.SetMaxOpenConns(d.Config.MaxOpenConns)
+	}
+	if d.Config.MaxIdleConns > 0 {
+		sqldb.SetMaxIdleConns(d.Config.MaxIdleConns)
+	}
+	if d.Config.ConnMaxLifetime > 0 {
+		sqldb.SetConnMaxLifetime(d.Config.ConnMaxLifetime)
+	}
+
 	d.DB = bun.NewDB(sqldb, d.Dialect, bun.WithDiscardUnknownColumns())
 
 	return nil
@@ -232,16 +242,7 @@ func (d *SQLDatabase) InsertOne(ctx context.Context, _ string, data any) (any, e
 
 // Update updates records in a table with optional filtering
 func (d *SQLDatabase) Update(ctx context.Context, table string, filter []port.DbExpression, data any) (int64, error) {
-	var query *bun.UpdateQuery
-	rv := reflect.ValueOf(data)
-	for rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
-	if rv.Kind() == reflect.Struct {
-		query = d.DB.NewUpdate().Model(data)
-	} else {
-		query = d.DB.NewUpdate().Model(data).Table(table)
-	}
+	query := d.newUpdateQuery(table, data)
 
 	buildWhereClause(d.Config.Driver, query.QueryBuilder(), filter, "")
 
@@ -255,16 +256,7 @@ func (d *SQLDatabase) Update(ctx context.Context, table string, filter []port.Db
 
 // UpdateOne updates a single record in a table
 func (d *SQLDatabase) UpdateOne(ctx context.Context, table string, filter []port.DbExpression, data any) (int64, error) {
-	var query *bun.UpdateQuery
-	rv := reflect.ValueOf(data)
-	for rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
-	if rv.Kind() == reflect.Struct {
-		query = d.DB.NewUpdate().Model(data)
-	} else {
-		query = d.DB.NewUpdate().Model(data).Table(table)
-	}
+	query := d.newUpdateQuery(table, data)
 
 	buildWhereClause(d.Config.Driver, query.QueryBuilder(), filter, "")
 
@@ -274,6 +266,27 @@ func (d *SQLDatabase) UpdateOne(ctx context.Context, table string, filter []port
 	}
 
 	return result.RowsAffected()
+}
+
+// newUpdateQuery builds a bun update query from the given model. Struct models
+// are passed through as-is (bun accepts struct pointers). Map models must be
+// passed to bun as a pointer (e.g. *map[string]any), so a non-pointer map is
+// wrapped automatically to avoid "bun: Model(non-pointer ...)" errors.
+func (d *SQLDatabase) newUpdateQuery(table string, data any) *bun.UpdateQuery {
+	rv := reflect.ValueOf(data)
+	for rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+	switch rv.Kind() {
+	case reflect.Struct:
+		return d.DB.NewUpdate().Model(data)
+	case reflect.Map:
+		mapPtr := reflect.New(rv.Type())
+		mapPtr.Elem().Set(rv)
+		return d.DB.NewUpdate().Model(mapPtr.Interface()).Table(table)
+	default:
+		return d.DB.NewUpdate().Model(data).Table(table)
+	}
 }
 
 // Delete deletes records from a table with optional filtering
