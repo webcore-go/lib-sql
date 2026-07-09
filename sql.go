@@ -273,17 +273,23 @@ func (d *SQLDatabase) UpdateOne(ctx context.Context, table string, filter []port
 // passed to bun as a pointer (e.g. *map[string]any), so a non-pointer map is
 // wrapped automatically to avoid "bun: Model(non-pointer ...)" errors.
 func (d *SQLDatabase) newUpdateQuery(table string, data any) *bun.UpdateQuery {
+	var ref bool
 	rv := reflect.ValueOf(data)
 	for rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
+		ref = true
 	}
 	switch rv.Kind() {
 	case reflect.Struct:
 		return d.DB.NewUpdate().Model(data)
 	case reflect.Map:
-		mapPtr := reflect.New(rv.Type())
-		mapPtr.Elem().Set(rv)
-		return d.DB.NewUpdate().Model(mapPtr.Interface()).Table(table)
+		if !ref {
+			mapPtr := reflect.New(rv.Type())
+			mapPtr.Elem().Set(rv)
+			return d.DB.NewUpdate().Model(mapPtr.Interface()).Table(table)
+		} else {
+			return d.DB.NewUpdate().Model(data).Table(table)
+		}
 	default:
 		return d.DB.NewUpdate().Model(data).Table(table)
 	}
